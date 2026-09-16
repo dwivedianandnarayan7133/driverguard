@@ -11,6 +11,25 @@ async def lifespan(app: FastAPI):
     # Startup logic
     print("DriveGuard AI Backend Starting...")
     Base.metadata.create_all(bind=engine)
+    try:
+        from app.database import SessionLocal
+        from app.models import User
+        from app.core.security import get_password_hash
+        db = SessionLocal()
+        user = db.query(User).filter(User.email == "admin@driveguard.ai").first()
+        if not user:
+            new_user = User(
+                email="admin@driveguard.ai", 
+                name="Admin User", 
+                password_hash=get_password_hash("admin"), 
+                role="ADMIN"
+            )
+            db.add(new_user)
+            db.commit()
+            print("Default admin user created on startup.")
+        db.close()
+    except Exception as e:
+        print(f"Startup seed error: {e}")
     yield
     # Shutdown logic
     print("DriveGuard AI Backend Shutting down...")
